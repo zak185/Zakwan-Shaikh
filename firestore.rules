@@ -1,0 +1,76 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: employees
+    // Fields:
+    //   - firstName: string (required)
+    //   - lastName: string (required)
+    //   - email: string (required, email format)
+    //   - phone: string (optional)
+    //   - department: string (required)
+    //   - position: string (required)
+    //   - salary: number (optional)
+    //   - hireDate: string (optional, ISO 8601)
+    //   - status: string (required, enum: ['active', 'inactive'])
+    //   - uid: string (required, owner UID)
+    //
+    // Collection: departments
+    // Fields:
+    //   - name: string (required)
+    //   - description: string (optional)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidEmployee(data) {
+      return data.firstName is string && data.firstName.size() > 0 && data.firstName.size() < 100 &&
+             data.lastName is string && data.lastName.size() > 0 && data.lastName.size() < 100 &&
+             isValidEmail(data.email) &&
+             data.department is string && data.department.size() > 0 &&
+             data.position is string && data.position.size() > 0 &&
+             data.status in ['active', 'inactive'] &&
+             data.uid == request.auth.uid;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /employees/{employeeId} {
+      // Only authenticated users can read employee data
+      allow read: if isAuthenticated();
+      
+      // Only the creator can create/update/delete their own employee records
+      allow create: if isAuthenticated() && isValidEmployee(request.resource.data);
+      allow update: if isAuthenticated() && isDocOwner() && isValidEmployee(request.resource.data);
+      allow delete: if isAuthenticated() && isDocOwner();
+    }
+
+    match /departments/{departmentId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated(); // For simplicity, any auth user can manage departments
+    }
+  }
+}

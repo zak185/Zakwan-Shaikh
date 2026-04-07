@@ -1,0 +1,42 @@
+{
+  "entities": {
+    "Employee": {
+      "title": "Employee",
+      "description": "A staff member in the organization.",
+      "type": "object",
+      "properties": {
+        "firstName": { "type": "string", "description": "First name of the employee" },
+        "lastName": { "type": "string", "description": "Last name of the employee" },
+        "email": { "type": "string", "format": "email", "description": "Work email address" },
+        "phone": { "type": "string", "description": "Contact phone number" },
+        "department": { "type": "string", "description": "Department name or ID" },
+        "position": { "type": "string", "description": "Job title" },
+        "salary": { "type": "number", "description": "Annual salary" },
+        "hireDate": { "type": "string", "format": "date", "description": "Date of joining (ISO 8601)" },
+        "status": { "type": "string", "enum": ["active", "inactive"], "description": "Current employment status" },
+        "uid": { "type": "string", "description": "The UID of the user who created this record" }
+      },
+      "required": ["firstName", "lastName", "email", "department", "position", "status"]
+    },
+    "Department": {
+      "title": "Department",
+      "description": "An organizational unit.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Department name" },
+        "description": { "type": "string", "description": "Brief description of the department" }
+      },
+      "required": ["name"]
+    }
+  },
+  "firestore": {
+    "/employees/{employeeId}": {
+      "schema": "Employee",
+      "description": "Collection of all employees"
+    },
+    "/departments/{departmentId}": {
+      "schema": "Department",
+      "description": "Collection of organizational departments"
+    }
+  }
+}
